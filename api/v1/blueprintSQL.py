@@ -16,27 +16,27 @@ async def api_v1_root(request):
     logger.info('request server from path /')
     return json({'hello': 'is my api'})
 
-@bp_v1.route('/user', methods=["POST"])
+@bp_v1.route('/user', methods=["GET","POST"])
 async def userPost(request):
-    logger.info('request server from path /user POST method')
-    body_data_byte = request.body.decode('utf-8')
-    data = jsonobj.loads(body_data_byte)
-    return json({
-        "parsed": True,
-        "url": request.url,
-        "query_string": request.query_string,
-        "args": request.args,
-        "query_args": request.query_args,
-        "body_byte": body_data_byte,
-        "body_json": data,
-        "dict_key": list(data.keys()),
-        "endpoint": request.endpoint,
-        "testSQLData": SqlApiV1Obj.test(2)
-    })
-
-@bp_v1.route('/user', methods=["GET"])
-async def userGet(request):
-    logger.info('request server from path /user GET method')
-    return json({
-        "testSQLData": SqlApiV1Obj.test(2)
-    })
+    if request.method == "GET":
+        logger.info('request server from path /user GET method')
+        return json({
+            "testSQLData": SqlApiV1Obj.test(2)
+        })
+    elif request.method == "POST":
+        logger.info('request server from path /user POST method')
+        body_data_byte = request.body.decode('utf-8')
+        data = jsonobj.loads(body_data_byte)
+        return json({
+            "parsed": True,
+            "url": request.url,
+            "query_string": request.query_string,
+            "args": request.args,
+            "query_args": request.query_args,
+            "body_byte": body_data_byte,
+            "body_json": data,
+            "dict_key": list(data.keys()),
+            "endpoint": request.endpoint,
+            "testSQLData": SqlApiV1Obj.test(2)
+        })
+    
