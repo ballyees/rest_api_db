@@ -33,16 +33,24 @@ class SqlApiV1():
     
     def insertUser(self, data):
         if self.getUser(data['username']):
-            return {'Sucess': False, 'code': 'have username'}
+            return {'Success': False, 'code': 'we have username'}
         else:
             user = User(data['username'], data['password'])
             if not user.checkIsUser():
-                return {'Sucess': False, 'code': 'no username or password'}
+                return {'Success': False, 'code': 'no username or password'}
             self.__cur.execute(SQLCommand.insertUser(user.getUserJson()))
             self.__connector.commit()
-            return {'Sucess': True}
+            return {'Success': True}
 
-    def loginAuthentication(self, data):
-
-        return
+    async def loginAuthentication(self, data):
+        user = self.getUser(data['username'])
+        if len(user) == 1:
+            user = user[0]
+            hashed = User.getNewHashingPassword(data['password'], user['salt'])
+            if user['hashedPassword'] == hashed:
+                return {'Success': True, 'responseData': [user]}
+            else:
+                return {'Success': False, 'exception': 'Wrong password'}
+        else:
+            return {'Success': False, 'exception': 'Wrong username'}
 SqlApiV1Obj = SqlApiV1('classicmodels.sqlite')
