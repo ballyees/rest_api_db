@@ -1,7 +1,6 @@
 import sqlite3
 from os.path import join, dirname, abspath
 from .SQLCommand import SQLCommand
-from ..loggingFile import Logger
 from .model import User
 
 class SqlApiV1():
