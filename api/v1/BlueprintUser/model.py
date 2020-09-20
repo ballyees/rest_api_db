@@ -4,10 +4,11 @@ class User():
         self.__username = str(username)
         self.__salt = self.__getNewSalt()
         self.__password = password
-        self.__hashedPassword = self.__getNewHashingPassword(password, self.__salt)
+        self.__hashedPassword = User.getNewHashingPassword(password, self.__salt)
         self.__token = token
 
-    def __getNewHashingPassword(self, password, salt):
+    @staticmethod
+    def getNewHashingPassword(password, salt):
         return hashlib.sha1(str(password).encode('utf-8') + str(salt).encode('utf-8')).hexdigest()
 
     def __getNewSalt(self):
@@ -16,18 +17,16 @@ class User():
     def getUserJson(self):
         return {'username': self.__username, 'hashedPassword': self.__hashedPassword, 'salt': self.__salt, 'token': self.__token}
 
-    @staticmethod
-    def checkIsUser(user1, user2):
-        print(f'user1: {user1}')
-        print(f'user2: {user2}')
-        return str(user1) == str(user2)
+    def checkIsUser(self):
+        return not ((not self.__username) | (not self.__password))
 
     def __str__(self):
         return f'username: {self.__username}, password: {self.__hashedPassword}, token: {self.__token}'
 
     def NewSalt(self):
         self.__salt = self.__getNewSalt()
-        self.__hashedPassword = self.__getNewHashingPassword(self.__password, self.__salt)
+        self.__hashedPassword = User.getNewHashingPassword(self.__password, self.__salt)
+
 
 # user1 = User('123', 'asldkj1l2kjlajlsd')
 # user2 = User('123', 'asldkj1l2kjlajlsd')

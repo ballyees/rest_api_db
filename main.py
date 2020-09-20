@@ -1,7 +1,9 @@
 from sanic import Sanic
-from api.v1.blueprintSQL import bp_v1
+from api.v1.BlueprintUser.blueprintSQL import bp_v1
+
 
 app = Sanic(__name__)
+
 app.blueprint(bp_v1)
 
 if __name__ == "__main__":

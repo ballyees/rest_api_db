@@ -2,7 +2,6 @@ from sanic import Blueprint
 from sanic.response import json, text
 from .SQLite import SqlApiV1Obj
 from sanic.log import logger
-import json as jsonobj
 
 bp_v1 = Blueprint('v1', url_prefix='/api', version="v1")
 
@@ -20,14 +19,13 @@ async def api_v1_root(request):
 async def userGET(request, username):
         logger.info('request server from path /user GET method')
         return json({
-            "userData": SqlApiV1Obj.getUser(username)
+            "responseData": SqlApiV1Obj.getUser(username)
         })  
 
 @bp_v1.route('/user', methods=["POST"])
 async def userPost(request):
     logger.info('request server from path /user POST method')
-    body_data_byte = request.body.decode('utf-8')
-    data = jsonobj.loads(body_data_byte)
+    data = request.json
     return json({
-        "Success": SqlApiV1Obj.insertUser(data)
+        "detail": SqlApiV1Obj.insertUser(data)
     })
