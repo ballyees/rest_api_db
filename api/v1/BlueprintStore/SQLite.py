@@ -4,12 +4,12 @@ from .SQLCommand import SQLCommand
 from ..model import User
 from ..sqlApiV1 import SqlApiV1
 
-class SqlApiUserV1(SqlApiV1):
+class SqlApiStoreV1(SqlApiV1):
     def __init__(self, DBName):
         SqlApiV1.__init__(self, DBName)
         self.__connect = self.getConnector()
         self.__cur = self.getCursor()
-
+        
     def getUser(self, username):
         sql_cmd = SQLCommand.getUser(username)
         rows = self.__cur.execute(sql_cmd)
@@ -29,27 +29,4 @@ class SqlApiUserV1(SqlApiV1):
             self.__connector.commit()
             return {'Success': True}
 
-    def insertUserFake(self, data):
-        if self.getUser(data['username']):
-            return {'Success': False, 'code': 'we have username'}
-        else:
-            user = User(data['username'], data['password'])
-            if not user.checkIsUser():
-                return {'Success': False, 'code': 'no username or password'}
-            self.__cur.execute(SQLCommand.insertUserFake(user.getUserJson()))
-            self.__connector.commit()
-            return {'Success': True}
-
-    async def loginAuthentication(self, data):
-        user = self.getUser(data['username'])
-        if len(user) == 1:
-            user = user[0]
-            hashed = User.getNewHashingPassword(data['password'], user['salt'])
-            if user['hashedPassword'] == hashed:
-                return {'Success': True, 'responseData': [user]}
-            else:
-                return {'Success': False, 'exception': 'Wrong password'}
-        else:
-            return {'Success': False, 'exception': 'Wrong username'}
-
-SqlApiV1Obj = SqlApiUserV1('loginModel.db')
+SqlApiV1Obj = SqlApiStoreV1('loginModel.db')

@@ -18,7 +18,7 @@ class User():
         return {'username': self.__username, 'hashedPassword': self.__hashedPassword, 'salt': self.__salt, 'token': self.__token}
 
     def checkIsUser(self):
-        return not ((not self.__username) | (not self.__password))
+        return (self.__username) and (self.__password)
 
     def __str__(self):
         return f'username: {self.__username}, password: {self.__hashedPassword}, token: {self.__token}'
@@ -26,8 +26,3 @@ class User():
     def NewSalt(self):
         self.__salt = self.__getNewSalt()
         self.__hashedPassword = User.getNewHashingPassword(self.__password, self.__salt)
-
-
-# user1 = User('123', 'asldkj1l2kjlajlsd')
-# user2 = User('123', 'asldkj1l2kjlajlsd')
-# print(User.checkIsUser(user1, user2))
