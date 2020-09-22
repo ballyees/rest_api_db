@@ -1,13 +1,24 @@
 import hashlib, uuid
 from datetime import datetime as dt, timedelta
 from random import random
+from os.path import join, dirname, abspath
+from json import dump, load
+
 class Token:
-    def __init__(self, name='', timeout=9999):
-        self.__name = name
-        self.__dt = dt.now()
-        self.__timeout = self.__dt + timedelta(seconds=timeout)
-        self.__token = self.__generateToken()
-        self.__isTimeout = False
+    def __init__(self, name='', timeout=9999, data={}):
+        if data:
+            self.__name = data['name']
+            self.__dt = dt.strptime(data['tokenStart'], data['fmt'])
+            self.__timeout = dt.strptime(data['tokenEnd'], data['fmt'])
+            self.__token = data['token']
+            self.__isTimeout = False
+            self.tokensIsExpired()
+        else:
+            self.__name = name
+            self.__dt = dt.now()
+            self.__timeout = self.__dt + timedelta(seconds=timeout)
+            self.__token = self.__generateToken()
+            self.__isTimeout = False
     
     def __generateToken(self):
         Token = hashlib.sha224(str(f'{random()}_access_{self.__name}').encode('utf-8') + str(uuid.uuid4().hex).encode('utf-8')).hexdigest()
@@ -18,6 +29,9 @@ class Token:
         self.__setTimeout(isTimeout)
         return isTimeout
     
+    def getIsTimeout(self):
+        return self.__isTimeout
+    
     def tokenIsName(self, name):
         return self.__name == name
 
@@ -26,18 +40,40 @@ class Token:
 
     def getToken(self):
         return self.__token
+    
+    def getJsonToken(self, fmt):
+        return {'token': self.__token, 'name': self.__name, 'tokenStart': self.__dt.strftime(fmt), 'tokenEnd': self.__timeout.strftime(fmt)}
 
     def __str__(self):
         return f'{self.__name}: {self.__token}'
 
 class TokenizeAndMiddleWare:
-    def __init__(self, limitRequest=1000000, limitRequestSec=2, timeout=9999):
+    def __init__(self, filename='Token', Type='', limitRequest=1000000, limitRequestSec=2, timeout=9999):
+        self.__filename = f"{filename}_{Type}.json"
+        self.__filePath = join(join(dirname(abspath(__file__)), 'token'), self.__filename)
         self.__tokens = {}
-        self.__tokensExpired = {}
         self.__socketIp = {}
         self.__limitRequest = limitRequest
         self.__limitRequestSec = limitRequestSec
         self.__timeout = timeout
+        self.__fmt = '%Y-%m-%dT%H:%M:%S.%f' #iso 8601 format
+    
+    def loadToken(self):
+        with open(self.__filePath, 'r') as jsonFile:
+            jsonToken = load(jsonFile)['data']
+            for t in jsonToken:
+                token = Token(data=t)
+                if not token.getIsTimeout():
+                    self.__tokens[token.getToken()] = token
+
+    def storeToken(self):
+        with open(self.__filePath, 'w') as file:
+            jsonToken = {}
+            jsonToken['data'] = []
+            for t in self.__tokens:
+                if not t.tokensIsExpired():
+                    jsonToken['data'].append(t.getJsonToken(self.__fmt))
+            dump(jsonToken, file)
 
     async def generateAndAddToken(self, name):
         token = Token(name, self.__timeout)
@@ -74,14 +110,10 @@ class TokenizeAndMiddleWare:
     def checkToken(self, Token=''):
         return Token in self.__tokens
     
-    def checkTokenExpired(self, Token=''):
-        return Token in self.__tokensExpired
-
     def checkTimeout(self, Token=''):
         tokenData = self.__tokens.get(Token, None)
         if tokenData:
             if tokenData.tokensIsExpired():
-                self.__tokensExpired[Token] = tokenData
                 self.delToken(Token)
                 return True
             else:
@@ -98,5 +130,5 @@ class TokenizeAndMiddleWare:
             return True
         return False
 
-TokenizerUser = TokenizeAndMiddleWare()
-TokenizerAdmin = TokenizeAndMiddleWare()
+TokenizerUser = TokenizeAndMiddleWare(Type='User')
+TokenizerAdmin = TokenizeAndMiddleWare(Type='Admin')

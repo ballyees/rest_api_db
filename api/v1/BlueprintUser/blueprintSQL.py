@@ -49,8 +49,8 @@ async def userPost(request):
 @bp_v1.route('/login', methods=["POST"])
 async def userLogin(request):
     data = request.json
-    if await TokenizerUser.isLogin(data['username']):
-        return json({"Success": False, 'exception': 'username is login'})
+    # if await TokenizerUser.isLogin(data['username']):
+    #     return json({"Success": False, 'exception': 'username is login'})
     responseLogin = await SqlApiV1Obj.loginAuthentication(data)
     if responseLogin['Success']:
         Logger.write(f'IP {request.socket[0]} [{data["username"]} login to server successful]', 'Login')
