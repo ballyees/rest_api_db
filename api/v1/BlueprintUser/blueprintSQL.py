@@ -8,7 +8,7 @@ bp_v1 = Blueprint('v1', url_prefix='/api/user', version="v1")
 
 @bp_v1.listener('after_server_stop')
 async def close_connection(app, loop):
-    await SqlApiV1Obj.close()
+    await SqlApiV1Obj.closeDB()
 
 @bp_v1.route('/<username>', methods=["GET"])
 async def userGET(request, username):

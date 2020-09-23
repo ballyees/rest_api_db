@@ -8,17 +8,18 @@ app = Sanic('projectDB')
 app.blueprint(bp_v1)
 
 if __name__ == "__main__":
+    host = "127.0.0.1"
+    port = 8000
     try:
         TokenizerUser.loadToken()
         TokenizerAdmin.loadToken()
-        app.run(host="127.0.0.1", port=8000, auto_reload=True)
-    except KeyboardInterrupt as e:
+        # app.run(host=host, port=port, auto_reload=True)
+        app.run(host=host, port=port)
+    except Exception as e:
         print(e)
-        
-        print('server stop with admin')
+        print('Server Stopped with admin')
         TokenizerUser.storeToken()
         TokenizerAdmin.storeToken()
-        sleep(5)
         print('end process')
-    finally:
-        pass
+    # finally:
+    #     pass

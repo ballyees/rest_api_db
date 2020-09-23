@@ -51,6 +51,7 @@ class TokenizeAndMiddleWare:
     def __init__(self, filename='Token', Type='', limitRequest=1000000, limitRequestSec=2, timeout=9999):
         self.__filename = f"{filename}_{Type}.json"
         self.__filePath = join(join(dirname(abspath(__file__)), 'token'), self.__filename)
+        self.__type = Type
         self.__tokens = {}
         self.__socketIp = {}
         self.__limitRequest = limitRequest
@@ -59,6 +60,7 @@ class TokenizeAndMiddleWare:
         self.__fmt = '%Y-%m-%dT%H:%M:%S.%f' #iso 8601 format
     
     def loadToken(self):
+        print(f'loading {self.__type} Token')
         with open(self.__filePath, 'r') as jsonFile:
             jsonToken = load(jsonFile)['data']
             for t in jsonToken:
