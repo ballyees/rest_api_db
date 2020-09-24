@@ -4,14 +4,14 @@ from .SQLite import SqlApiV1Obj
 from ..Tokenize import TokenizerUser
 from ..loggingFile import Logger
 
-bp_v1 = Blueprint('v1', url_prefix='/api/store', version="v1")
+bp_v1_store = Blueprint('v1', url_prefix='/api/store', version="v1")
 
-@bp_v1.listener('after_server_stop')
+@bp_v1_store.listener('after_server_stop')
 async def close_connection(app, loop):
     await SqlApiV1Obj.close()
 
-@bp_v1.route('/<username>', methods=["GET"])
-async def userGET(request, username):
+@bp_v1_store.route('/<officeCode>', methods=["GET"])
+async def userGET(request, officeCode):
     if not request.headers.get('token', None):
         Logger.write(f'IP {request.socket} [no token]', 'request-data')
         return json({'exception': 'Authentication Failed', 'code': 1, 'description': 'none token'}, status=401) 
@@ -29,7 +29,7 @@ async def userGET(request, username):
         Logger.write(f'IP {request.socket[0]} [{username} use unknown token]', 'request-data')
         return json({'exception': 'Authentication Failed', 'code': 3, 'description': 'permission deined'}, status=401)
             
-@bp_v1.route('/', methods=["POST"])
+@bp_v1_store.route('/', methods=["POST"])
 async def userPost(request):
     data = request.json
     if not TokenizerUser.addSocketIp(request.socket):

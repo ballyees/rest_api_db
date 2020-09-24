@@ -44,43 +44,74 @@ class Token:
     def getJsonToken(self, fmt):
         return {'token': self.__token, 'name': self.__name, 'tokenStart': self.__dt.strftime(fmt), 'tokenEnd': self.__timeout.strftime(fmt)}
 
+    def getName(self):
+        return self.__name
+
     def __str__(self):
         return f'{self.__name}: {self.__token}'
 
 class TokenizeAndMiddleWare:
-    def __init__(self, filename='Token', Type='', limitRequest=1000000, limitRequestSec=2, timeout=9999):
+    def __init__(self, filename='Token', Type='', limitRequest=1000000, limitRequestSec=2, timeout=3):
         self.__filename = f"{filename}_{Type}.json"
         self.__filePath = join(join(dirname(abspath(__file__)), 'token'), self.__filename)
         self.__type = Type
+        self.__signInUser = {}
         self.__tokens = {}
         self.__socketIp = {}
         self.__limitRequest = limitRequest
         self.__limitRequestSec = limitRequestSec
         self.__timeout = timeout
         self.__fmt = '%Y-%m-%dT%H:%M:%S.%f' #iso 8601 format
-    
+    def __addSignInUser(self, name, token):
+        self.__signInUser[name] = token
+
+    def __addToken(self, tokenObj):
+        self.__tokens[tokenObj.getToken()] = tokenObj   
+
     def loadToken(self):
         print(f'loading {self.__type} Token')
         with open(self.__filePath, 'r') as jsonFile:
             jsonToken = load(jsonFile)['data']
             for t in jsonToken:
+                t['fmt'] = self.__fmt
                 token = Token(data=t)
                 if not token.getIsTimeout():
-                    self.__tokens[token.getToken()] = token
+                    self.__addToken(token)
+                    self.__addSignInUser(token.getName(), token.getToken())
+
 
     def storeToken(self):
+        print(f'store {self.__type} Token')
         with open(self.__filePath, 'w') as file:
             jsonToken = {}
             jsonToken['data'] = []
             for t in self.__tokens:
-                if not t.tokensIsExpired():
-                    jsonToken['data'].append(t.getJsonToken(self.__fmt))
+                if not self.__tokens[t].tokensIsExpired():
+                    jsonToken['data'].append(self.__tokens[t].getJsonToken(self.__fmt))
             dump(jsonToken, file)
+    
+    def clearAllToken(self):
+        self.__signInUser.clear()
+        self.__tokens.clear()
+        self.__socketIp.clear()
 
-    async def generateAndAddToken(self, name):
+    def generateAndAddToken(self, name):
         token = Token(name, self.__timeout)
-        self.__tokens[token.getToken()] = token
+        self.__addSignInUser(name, token.getToken())
+        self.__addToken(token)
         return token.getToken()
+
+    def generateAndCheckToken(self, name):
+        if not self.__signInUser.get(name, None):
+            token = Token(name, self.__timeout)
+            self.__addSignInUser(name, token.getToken())
+            self.__addToken(token)
+            return token.getToken()
+        elif self.__tokens[self.__signInUser[name]].tokensIsExpired():
+            self.delToken()
+            return self.generateAndAddToken(name)
+        else:
+            return self.__signInUser[name]
 
     async def isLogin(self, name):
         for t in self.__tokens:
@@ -128,6 +159,7 @@ class TokenizeAndMiddleWare:
 
     def delToken(self, Token=''):
         if self.__tokens.get(Token, None):
+            del self.__signInUser[self.__tokens[Token].getName()]
             del self.__tokens[Token]
             return True
         return False

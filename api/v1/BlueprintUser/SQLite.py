@@ -27,7 +27,8 @@ class SqlApiUserV1(SqlApiV1):
                 return {'Success': False, 'code': 'no username or password'}
             self.__cur.execute(SQLCommand.insertUser(user.getUserJson(), data['type']))
             self.__connector.commit()
-            return {'Success': True}
+            del data['password']
+            return {'Success': True, 'user': data}
 
     def insertUserFake(self, data):
         if self.getUser(data['username']):

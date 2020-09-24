@@ -4,13 +4,13 @@ from .SQLite import SqlApiV1Obj
 from ..Tokenize import TokenizerUser
 from ..loggingFile import Logger
 
-bp_v1 = Blueprint('v1', url_prefix='/api/user', version="v1")
+bp_v1_user = Blueprint('v1', url_prefix='/api/user', version="v1")
 
-@bp_v1.listener('after_server_stop')
+@bp_v1_user.listener('after_server_stop')
 async def close_connection(app, loop):
     await SqlApiV1Obj.closeDB()
 
-@bp_v1.route('/<username>', methods=["GET"])
+@bp_v1_user.route('/<username>', methods=["GET"])
 async def userGET(request, username):
     if not request.headers.get('token', None):
         Logger.write(f'IP {request.socket} [no token]', 'request-data')
@@ -29,7 +29,7 @@ async def userGET(request, username):
         Logger.write(f'IP {request.socket[0]} [{username} use unknown token]', 'request-data')
         return json({'exception': 'Authentication Failed', 'code': 3, 'description': 'permission deined'}, status=401)
             
-@bp_v1.route('/', methods=["POST"])
+@bp_v1_user.route('/', methods=["POST"])
 async def userPost(request):
     data = request.json
     if not TokenizerUser.addSocketIp(request.socket):
@@ -40,13 +40,13 @@ async def userPost(request):
         else:
             Logger.write(f'IP {request.socket[0]} [create {data["username"]} cannot successful]', 'create')
         return json({
-                "detail": res
+                "responseData": res
             })
     else:
         Logger.write(f'IP {request.socket[0]} [{data.get("username", "Unknown")} to many request to server]', 'create')
         return json({'exception': 'to many request to server'}, status=401)
 
-@bp_v1.route('/login', methods=["POST"])
+@bp_v1_user.route('/login', methods=["POST"])
 async def userLogin(request):
     data = request.json
     # if await TokenizerUser.isLogin(data['username']):
@@ -57,13 +57,13 @@ async def userLogin(request):
         del responseLogin["responseData"][0]['salt']
         return json({
             "responseData": responseLogin["responseData"],
-            "token": await TokenizerUser.generateAndAddToken(data['username'])
+            "token": TokenizerUser.generateAndCheckToken(data['username'])
         })
     else:
         Logger.write(f'IP {request.socket[0]} [{data.get("username", "Unknown")} try login to server]', 'Login')
         return json(responseLogin)
 
-@bp_v1.route('/loguot', methods=["POST"])
+@bp_v1_user.route('/loguot', methods=["POST"])
 async def userLogout(request):
     if not request.headers.get('token', None):
         Logger.write(f'IP {request.socket[0]} [{data.get("username", "Unknown")} cannot send token]', 'logout')
@@ -75,7 +75,7 @@ async def userLogout(request):
         Logger.write(f'IP {request.socket[0]} [{data.get("username", "Unknown")} cannot find token]', 'logout')
         return json({'Success': False})
 
-# @bp_v1.route('/fakeUser', methods=["POST"])
+# @bp_v1_user.route('/fakeUser', methods=["POST"])
 # async def userPostFake(request):
 #     data = request.json
 #     if not TokenizerUser.addSocketIp(request.socket):
