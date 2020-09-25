@@ -11,7 +11,7 @@ class LoggingFileV1:
 
     def write(self, inputLine, typeData):
         typeData = f'[{typeData.upper()}]'
-        formatDate = "[%d-%m-%Y %H:%M:%S:%f]"
+        formatDate = "[%d-%m-%Y %H:%M:%S.%f]"
         strDateNow = dt.now().strftime(formatDate)
         log = f'{strDateNow}{typeData}: {inputLine}\n'
         with open(self.__filePath, 'a+') as file:

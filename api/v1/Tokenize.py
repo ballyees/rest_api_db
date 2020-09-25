@@ -3,14 +3,15 @@ from datetime import datetime as dt, timedelta
 from random import random
 from os.path import join, dirname, abspath
 from json import dump, load
+from .configure import ConfigureAPI
 
 class Token:
     def __init__(self, name='', timeout=9999, data={}):
         if data:
-            self.__name = data['name']
-            self.__dt = dt.strptime(data['tokenStart'], data['fmt'])
-            self.__timeout = dt.strptime(data['tokenEnd'], data['fmt'])
-            self.__token = data['token']
+            self.__name = data[ConfigureAPI.keyLoadStoreTokenName]
+            self.__dt = dt.strptime(data[ConfigureAPI.keyLoadStoreTokenStart], data[ConfigureAPI.keyLoadStoreDateFormat])
+            self.__timeout = dt.strptime(data[ConfigureAPI.keyLoadStoreTokenEnd], data[ConfigureAPI.keyLoadStoreDateFormat])
+            self.__token = data[ConfigureAPI.keyLoadStoreToken]
             self.__isTimeout = False
             self.tokensIsExpired()
         else:
@@ -42,7 +43,8 @@ class Token:
         return self.__token
     
     def getJsonToken(self, fmt):
-        return {'token': self.__token, 'name': self.__name, 'tokenStart': self.__dt.strftime(fmt), 'tokenEnd': self.__timeout.strftime(fmt)}
+        return {ConfigureAPI.keyLoadStoreToken: self.__token, ConfigureAPI.keyLoadStoreTokenName: self.__name,
+                ConfigureAPI.keyLoadStoreTokenStart: self.__dt.strftime(fmt), ConfigureAPI.keyLoadStoreTokenEnd: self.__timeout.strftime(fmt)}
 
     def getName(self):
         return self.__name
@@ -51,7 +53,7 @@ class Token:
         return f'{self.__name}: {self.__token}'
 
 class TokenizeAndMiddleWare:
-    def __init__(self, filename='Token', Type='', limitRequest=1000000, limitRequestSec=2, timeout=3):
+    def __init__(self, filename='Token', Type='', limitRequest=2, limitRequestSec=2, timeout=999):
         self.__filename = f"{filename}_{Type}.json"
         self.__filePath = join(join(dirname(abspath(__file__)), 'token'), self.__filename)
         self.__type = Type
@@ -61,33 +63,36 @@ class TokenizeAndMiddleWare:
         self.__limitRequest = limitRequest
         self.__limitRequestSec = limitRequestSec
         self.__timeout = timeout
-        self.__fmt = '%Y-%m-%dT%H:%M:%S.%f' #iso 8601 format
+        self.__fmt = ConfigureAPI.DateFormat
     def __addSignInUser(self, name, token):
         self.__signInUser[name] = token
 
     def __addToken(self, tokenObj):
         self.__tokens[tokenObj.getToken()] = tokenObj   
 
-    def loadToken(self):
+    async def loadToken(self):
         print(f'loading {self.__type} Token')
-        with open(self.__filePath, 'r') as jsonFile:
-            jsonToken = load(jsonFile)['data']
-            for t in jsonToken:
-                t['fmt'] = self.__fmt
-                token = Token(data=t)
-                if not token.getIsTimeout():
-                    self.__addToken(token)
-                    self.__addSignInUser(token.getName(), token.getToken())
+        try:
+            with open(self.__filePath, 'r') as jsonFile:
+                jsonToken = load(jsonFile)[ConfigureAPI.keyLoadStoreData]
+                for t in jsonToken:
+                    t[ConfigureAPI.keyLoadStoreDateFormat] = self.__fmt
+                    token = Token(data=t)
+                    if not token.getIsTimeout():
+                        self.__addToken(token)
+                        self.__addSignInUser(token.getName(), token.getToken())
+        except FileNotFoundError:
+            print(f'create file {self.__filename}')
+            await self.storeToken()
 
-
-    def storeToken(self):
+    async def storeToken(self):
         print(f'store {self.__type} Token')
         with open(self.__filePath, 'w') as file:
             jsonToken = {}
-            jsonToken['data'] = []
+            jsonToken[ConfigureAPI.keyLoadStoreData] = []
             for t in self.__tokens:
                 if not self.__tokens[t].tokensIsExpired():
-                    jsonToken['data'].append(self.__tokens[t].getJsonToken(self.__fmt))
+                    jsonToken[ConfigureAPI.keyLoadStoreData].append(self.__tokens[t].getJsonToken(self.__fmt))
             dump(jsonToken, file)
     
     def clearAllToken(self):
@@ -101,14 +106,15 @@ class TokenizeAndMiddleWare:
         self.__addToken(token)
         return token.getToken()
 
-    def generateAndCheckToken(self, name):
+    async def generateAndCheckToken(self, name):
         if not self.__signInUser.get(name, None):
             token = Token(name, self.__timeout)
             self.__addSignInUser(name, token.getToken())
             self.__addToken(token)
             return token.getToken()
         elif self.__tokens[self.__signInUser[name]].tokensIsExpired():
-            self.delToken()
+            '''refresh token'''
+            await self.delToken()
             return self.generateAndAddToken(name)
         else:
             return self.__signInUser[name]
@@ -120,7 +126,7 @@ class TokenizeAndMiddleWare:
                 return True
         return False
 
-    def addSocketIp(self, socket):
+    async def addSocketIp(self, socket):
         if socket[0] not in self.__socketIp:
             print(socket[0])
             self.__socketIp[socket[0]] = {}
@@ -140,24 +146,24 @@ class TokenizeAndMiddleWare:
                 return False
         return False
 
-    def checkToken(self, Token=''):
+    async def checkToken(self, Token=''):
         return Token in self.__tokens
     
     def checkTimeout(self, Token=''):
         tokenData = self.__tokens.get(Token, None)
         if tokenData:
             if tokenData.tokensIsExpired():
-                self.delToken(Token)
+                # self.delToken(Token)
                 return True
             else:
                 return False
         else:
             return False, 'None token'
 
-    def checkTokenAndName(self, Token='', name=''):
+    async def checkTokenAndName(self, Token='', name=''):
         return (not self.checkTimeout(Token)) and (Token in self.__tokens) and self.__tokens[Token].tokenIsName(name)
 
-    def delToken(self, Token=''):
+    async def delToken(self, Token=''):
         if self.__tokens.get(Token, None):
             del self.__signInUser[self.__tokens[Token].getName()]
             del self.__tokens[Token]
