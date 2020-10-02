@@ -1,7 +1,7 @@
 from sanic import Blueprint
 from sanic.response import json, stream
 from .SQLite import SqlApiV1Obj
-from ..Tokenize import TokenizerUser
+from ..Tokenize import TokenizerUser, TokenizerAdmin
 from ..loggingFile import Logger
 from ..configure import ConfigureAPI
 bp_v1_user = Blueprint('v1', url_prefix='/api/user', version="v1")
@@ -52,22 +52,35 @@ async def userLogin(request):
     responseLogin = await SqlApiV1Obj.loginAuthentication(data)
     if responseLogin['Success']:
         Logger.write(f'IP {request.socket[0]} [{data[ConfigureAPI.keyRequestUsername]} login to server successful]', 'Login')
-        del responseLogin[ConfigureAPI.keyResponseData][0]['salt']
+        del responseLogin[ConfigureAPI.keyResponseData][0][ConfigureAPI.keyQueryUsersSalt]
+        responseData = responseLogin[ConfigureAPI.keyResponseData]
+        if responseData[0][ConfigureAPI.keyQueryUsersType] == ConfigureAPI.keyResponseLoginType['admin']:
+            token = await TokenizerAdmin.generateAndCheckToken(data[ConfigureAPI.keyRequestUsername])
+        else:
+            token = await TokenizerUser.generateAndCheckToken(data[ConfigureAPI.keyRequestUsername])
+        responseData[0][ConfigureAPI.keyRequestHeaderLogoutType] = ConfigureAPI.keyResponseLoginType[responseData[0][ConfigureAPI.keyQueryUsersType]]
+        if ConfigureAPI.keyQueryUsersType != ConfigureAPI.keyRequestHeaderLogoutType:
+            del responseData[0][ConfigureAPI.keyQueryUsersType]
         return json({
-            ConfigureAPI.keyResponseData: responseLogin[ConfigureAPI.keyResponseData],
-            ConfigureAPI.keyTokenHeader: await TokenizerUser.generateAndCheckToken(data[ConfigureAPI.keyRequestUsername])
+            ConfigureAPI.keyResponseData: responseData,
+            ConfigureAPI.keyTokenHeader: token
         })
     else:
         Logger.write(f'IP {request.socket[0]} [{data.get(ConfigureAPI.keyRequestUsername, "Unknown")} try login to server]', 'Login')
         return json(responseLogin)
 
+async def isLogout(typeUser, token):
+    if typeUser == ConfigureAPI.keyResponseLoginType['admin']:
+        return await TokenizerAdmin.delToken(token) 
+    else:
+        return await TokenizerUser.delToken(token)
 @bp_v1_user.route('/logout', methods=["POST"])
 async def userLogout(request):
     data = request.json
-    if not request.headers.get(ConfigureAPI.keyTokenHeader, None):
+    if not request.headers.get(ConfigureAPI.keyTokenHeader, None) or not request.headers.get(ConfigureAPI.keyRequestHeaderLogoutType, None):
         Logger.write(f'IP {request.socket[0]} [{data.get(ConfigureAPI.keyRequestUsername, "Unknown")} cannot send token]', 'logout')
         return json({'Success': False})
-    elif await TokenizerUser.delToken(request.headers[ConfigureAPI.keyTokenHeader]):
+    elif await isLogout(request.headers[ConfigureAPI.keyRequestHeaderLogoutType], request.headers[ConfigureAPI.keyTokenHeader]):
         Logger.write(f'IP {request.socket[0]} [{data[ConfigureAPI.keyRequestUsername]} logout successful]', 'logout')
         return json({'Success': True})
     else:

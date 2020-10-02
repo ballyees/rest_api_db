@@ -1,5 +1,7 @@
 class Configure:
     def __init__(self):
+        
+        # config Tokenizer
         self.keyTokenHeader = 'tokenAuthenticate'
         self.keyLoadStoreToken = 'token'
         self.keyLoadStoreTokenStart = 'tokenStart'
@@ -8,8 +10,18 @@ class Configure:
         self.DateFormat = '%Y-%m-%dT%H:%M:%S.%f' #iso 8601 format
         self.keyLoadStoreData = 'data'
         self.keyLoadStoreDateFormat = 'fmt'
+
+        # config request and response :: user blueprint
         self.keyRequestUsername = 'username'
         self.keyRequestPassword = 'password'
         self.keyResponseData = 'responseData'
+        self.keyResponseLoginType = {'admin': 'admin', 'Sales': 'Sales', 'Common': 'Common'}
+        self.keyRequestHeaderLogoutType = 'type'
 
+        # config query sql :: user blueprint
+        self.keyQueryUsersUsername = 'username'
+        self.keyQueryUsersHashedPassword = 'hashedPassword'
+        self.keyQueryUsersSalt = 'salt'
+        self.keyQueryUsersType = 'type'
+        
 ConfigureAPI = Configure()
