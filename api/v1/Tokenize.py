@@ -114,29 +114,22 @@ class TokenizeAndMiddleWare:
             return token.getToken()
         elif self.__tokens[self.__signInUser[name]].tokensIsExpired():
             '''refresh token'''
-            await self.delToken()
+            await self.delToken(self.__signInUser[name])
             return self.generateAndAddToken(name)
         else:
             return self.__signInUser[name]
 
-    async def isLogin(self, name):
-        for t in self.__tokens:
-            print(self.__tokens[t])
-            if self.__tokens[t].tokenIsName(name):
-                return True
-        return False
-
-    async def addSocketIp(self, socket):
-        if socket[0] not in self.__socketIp:
-            print(socket[0])
-            self.__socketIp[socket[0]] = {}
-            self.__socketIp[socket[0]]['Time'] = []
-            self.__socketIp[socket[0]]['Time'].append(dt.now())
-            return False
+    async def refreshToken(self, token):
+        if not self.__tokens.get(token, None):
+            return False, 'no token'
+        elif self.__tokens[token].tokensIsExpired():
+            name = self.__tokens[token].getName()
+            newToken = self.generateAndAddToken(name)
+            await self.delToken(self.__signInUser[name])
+            return True, newToken
         else:
-            self.__socketIp[socket[0]]['Time'].append(dt.now())
-            return self.checkBotWithSocket(socket)
-    
+            return False, 'token is not expired'
+ 
     def checkBotWithSocket(self, socket):
         if len(self.__socketIp[socket[0]].get('Time', [])) > self.__limitRequest:
             if (self.__socketIp[socket[0]]['Time'][-1] - self.__socketIp[socket[0]]['Time'][0]).seconds < self.__limitRequestSec:
@@ -147,7 +140,7 @@ class TokenizeAndMiddleWare:
         return False
 
     async def checkToken(self, Token=''):
-        return Token in self.__tokens
+        return self.__tokens.get(Token, False)
     
     def checkTimeout(self, Token=''):
         tokenData = self.__tokens.get(Token, None)
@@ -161,7 +154,7 @@ class TokenizeAndMiddleWare:
             return False, 'None token'
 
     async def checkTokenAndName(self, Token='', name=''):
-        return (not self.checkTimeout(Token)) and (Token in self.__tokens) and self.__tokens[Token].tokenIsName(name)
+        return self.__tokens.get(Token, False) and self.__signInUser.get(name, False) and self.__signInUser.get(name) == Token
 
     async def delToken(self, Token=''):
         if self.__tokens.get(Token, None):

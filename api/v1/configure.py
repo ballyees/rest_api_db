@@ -2,7 +2,6 @@ class Configure:
     def __init__(self):
         
         # config Tokenizer
-        self.keyTokenHeader = 'tokenAuthenticate'
         self.keyLoadStoreToken = 'token'
         self.keyLoadStoreTokenStart = 'tokenStart'
         self.keyLoadStoreTokenEnd = 'tokenEnd'
@@ -12,6 +11,8 @@ class Configure:
         self.keyLoadStoreDateFormat = 'fmt'
 
         # config request and response :: user blueprint
+        self.keyTokenHeader = 'tokenAuthenticate'
+        self.keyRefreshToken = 'refreshToken'
         self.keyRequestUsername = 'username'
         self.keyRequestPassword = 'password'
         self.keyResponseData = 'responseData'

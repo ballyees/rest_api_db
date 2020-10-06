@@ -10,6 +10,12 @@ bp_v1_user = Blueprint('v1', url_prefix='/api/user', version="v1")
 async def close_connection(app, loop):
     await SqlApiV1Obj.closeDB()
 
+async def addRefreshToken(res, token):
+    ref = TokenizerAdmin.refreshToken(token)
+    if ref[0]:
+        res[ConfigureAPI.keyRefreshToken] = ref[1]
+    return res
+
 @bp_v1_user.route('/<username>', methods=["GET"])
 async def userGET(request, username):
     if not request.headers.get(ConfigureAPI.keyTokenHeader, None):
@@ -32,19 +38,18 @@ async def userGET(request, username):
 @bp_v1_user.route('/', methods=["POST"])
 async def userPost(request):
     data = request.json
-    if not await TokenizerUser.addSocketIp(request.socket):
+    if not await TokenizerAdmin.checkTokenAndName(data.get(ConfigureAPI.keyTokenHeader, ''), data.get(ConfigureAPI.keyRequestUsername, '')):
         data['type'] = 'Common'
         res = SqlApiV1Obj.insertUser(data)
+        reponse = await addRefreshToken({ ConfigureAPI.keyResponseData: res }, data[ConfigureAPI.keyTokenHeader])
         if res['Success']:
             Logger.write(f'IP {request.socket[0]} [create {data[ConfigureAPI.keyRequestUsername]} successful]', 'create')
         else:
             Logger.write(f'IP {request.socket[0]} [create {data[ConfigureAPI.keyRequestUsername]} cannot successful]', 'create')
-        return json({
-                ConfigureAPI.keyResponseData: res
-            })
+        return json(reponse)
     else:
-        Logger.write(f'IP {request.socket[0]} [{data.get(ConfigureAPI.keyRequestUsername, "Unknown")} to many request to server]', 'create')
-        return json({'exception': 'to many request to server'}, status=401)
+        Logger.write(f'IP {request.socket[0]} request to server]', 'create')
+        return json({'exception': 'permission denied'}, status=401)
 
 @bp_v1_user.route('/login', methods=["POST"])
 async def userLogin(request):
@@ -67,22 +72,23 @@ async def userLogin(request):
         })
     else:
         Logger.write(f'IP {request.socket[0]} [{data.get(ConfigureAPI.keyRequestUsername, "Unknown")} try login to server]', 'Login')
-        return json(responseLogin)
+        return json(responseLogin, status=400)
 
 async def isLogout(typeUser, token):
     if typeUser == ConfigureAPI.keyResponseLoginType['admin']:
         return await TokenizerAdmin.delToken(token) 
     else:
         return await TokenizerUser.delToken(token)
+
 @bp_v1_user.route('/logout', methods=["POST"])
 async def userLogout(request):
     data = request.json
     if not request.headers.get(ConfigureAPI.keyTokenHeader, None) or not request.headers.get(ConfigureAPI.keyRequestHeaderLogoutType, None):
         Logger.write(f'IP {request.socket[0]} [{data.get(ConfigureAPI.keyRequestUsername, "Unknown")} cannot send token]', 'logout')
-        return json({'Success': False})
+        return json({'Success': False}, status=400)
     elif await isLogout(request.headers[ConfigureAPI.keyRequestHeaderLogoutType], request.headers[ConfigureAPI.keyTokenHeader]):
         Logger.write(f'IP {request.socket[0]} [{data[ConfigureAPI.keyRequestUsername]} logout successful]', 'logout')
         return json({'Success': True})
     else:
         Logger.write(f'IP {request.socket[0]} [{data.get(ConfigureAPI.keyRequestUsername, "Unknown")} cannot find token]', 'logout')
-        return json({'Success': False})
+        return json({'Success': False}, status=406)
