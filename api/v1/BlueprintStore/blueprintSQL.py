@@ -6,11 +6,15 @@ from ..loggingFile import Logger
 from ..configure import ConfigureAPI
 
 
-bp_v1_store = Blueprint('v1', url_prefix='/api/store', version="v1")
+bp_v1_store = Blueprint('store_v1', url_prefix='/api/store', version="v1")
 
 @bp_v1_store.listener('after_server_stop')
 async def close_connection(app, loop):
     await SqlApiV1Obj.close()
+
+@bp_v1_store.route('/', methods=["GET"])
+async def test(request):
+    return json({'data': 'testy'})
 
 @bp_v1_store.route('/<officeCode>', methods=["GET"])
 async def userGET(request, officeCode):

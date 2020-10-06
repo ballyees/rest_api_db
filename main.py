@@ -1,5 +1,6 @@
 from sanic import Sanic
 from api.v1.BlueprintUser.blueprintSQL import bp_v1_user
+from api.v1.BlueprintStore.blueprintSQL import bp_v1_store
 from api.v1.Tokenize import TokenizerUser, TokenizerAdmin
 from time import sleep
 from asyncio import run, gather
@@ -7,6 +8,7 @@ from asyncio import run, gather
 app = Sanic('projectDB')
 
 app.blueprint(bp_v1_user)
+app.blueprint(bp_v1_store)
 
 async def loadToken():
     await gather(TokenizerUser.loadToken(), TokenizerAdmin.loadToken())

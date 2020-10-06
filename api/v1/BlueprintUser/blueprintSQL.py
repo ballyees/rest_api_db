@@ -4,7 +4,7 @@ from .SQLite import SqlApiV1Obj
 from ..Tokenize import TokenizerUser, TokenizerAdmin
 from ..loggingFile import Logger
 from ..configure import ConfigureAPI
-bp_v1_user = Blueprint('v1', url_prefix='/api/user', version="v1")
+bp_v1_user = Blueprint('user_v1', url_prefix='/api/user', version="v1")
 
 @bp_v1_user.listener('after_server_stop')
 async def close_connection(app, loop):
