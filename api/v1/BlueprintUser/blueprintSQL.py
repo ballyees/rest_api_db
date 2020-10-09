@@ -82,13 +82,12 @@ async def isLogout(typeUser, token):
 
 @bp_v1_user.route('/logout', methods=["POST"])
 async def userLogout(request):
-    data = request.json
     if not request.headers.get(ConfigureAPI.keyTokenHeader, None) or not request.headers.get(ConfigureAPI.keyRequestHeaderLogoutType, None):
-        Logger.write(f'IP {request.socket[0]} [{data.get(ConfigureAPI.keyRequestUsername, "Unknown")} cannot send token]', 'logout')
+        Logger.write(f'IP {request.socket[0]} [cannot send token]', 'logout')
         return json({'Success': False}, status=400)
     elif await isLogout(request.headers[ConfigureAPI.keyRequestHeaderLogoutType], request.headers[ConfigureAPI.keyTokenHeader]):
-        Logger.write(f'IP {request.socket[0]} [{data[ConfigureAPI.keyRequestUsername]} logout successful]', 'logout')
+        Logger.write(f'IP {request.socket[0]} [logout successful]', 'logout')
         return json({'Success': True})
     else:
-        Logger.write(f'IP {request.socket[0]} [{data.get(ConfigureAPI.keyRequestUsername, "Unknown")} cannot find token]', 'logout')
+        Logger.write(f'IP {request.socket[0]} [cannot find token]', 'logout')
         return json({'Success': False}, status=406)
