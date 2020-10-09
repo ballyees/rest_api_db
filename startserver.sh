@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 
+source ~/anaconda3/etc/profile.d/conda.sh
 conda activate sanicAPI
-python main.py
+echo "Start restful-api Store"
+python D:/Subject/Database/dbproject/rest_api_db/main.py
