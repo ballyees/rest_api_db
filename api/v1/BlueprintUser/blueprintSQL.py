@@ -59,7 +59,7 @@ async def userLogin(request):
         Logger.write(f'IP {request.socket[0]} [{data[ConfigureAPI.keyRequestUsername]} login to server successful]', 'Login')
         del responseLogin[ConfigureAPI.keyResponseData][0][ConfigureAPI.keyQueryUsersSalt]
         responseData = responseLogin[ConfigureAPI.keyResponseData]
-        if responseData[0][ConfigureAPI.keyQueryUsersType] == ConfigureAPI.keyResponseLoginType['admin']:
+        if responseData[0][ConfigureAPI.keyQueryUsersType] == ConfigureAPI.keyResponseLoginType['Admin']:
             token = await TokenizerAdmin.generateAndCheckToken(data[ConfigureAPI.keyRequestUsername])
         else:
             token = await TokenizerUser.generateAndCheckToken(data[ConfigureAPI.keyRequestUsername])
@@ -75,7 +75,7 @@ async def userLogin(request):
         return json(responseLogin, status=400)
 
 async def isLogout(typeUser, token):
-    if typeUser == ConfigureAPI.keyResponseLoginType['admin']:
+    if typeUser == ConfigureAPI.keyResponseLoginType['Admin']:
         return await TokenizerAdmin.delToken(token) 
     else:
         return await TokenizerUser.delToken(token)

@@ -16,7 +16,15 @@ class Configure:
         self.keyRequestUsername = 'username'
         self.keyRequestPassword = 'password'
         self.keyResponseData = 'responseData'
-        self.keyResponseLoginType = {'admin': 'admin', 'Sales': 'Sales', 'Common': 'Common'}
+        self.keyResponseLoginType = {'Admin': 'Admin',
+        'President': 'President',
+        'VP Sales': 'VP Sales',
+        'VP Marketing': 'VP Marketing',
+        'Sales Manager (APAC)': 'Sales Manager',
+        'Sales Manager (EMEA)': 'Sales Manager',
+        'Sales Manager (NA)': 'Sales Manager',
+        'Sales Rep': 'Sales'
+        }
         self.keyRequestHeaderLogoutType = 'type'
 
         # config query sql :: user blueprint
