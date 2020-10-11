@@ -39,7 +39,6 @@ async def userGET(request, username):
 async def userPost(request):
     data = request.json
     if not await TokenizerAdmin.checkTokenAndName(data.get(ConfigureAPI.keyTokenHeader, ''), data.get(ConfigureAPI.keyRequestUsername, '')):
-        data['type'] = 'Common'
         res = SqlApiV1Obj.insertUser(data)
         reponse = await addRefreshToken({ ConfigureAPI.keyResponseData: res }, data[ConfigureAPI.keyTokenHeader])
         if res['Success']:
